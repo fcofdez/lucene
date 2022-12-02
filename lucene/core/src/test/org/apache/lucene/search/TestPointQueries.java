@@ -37,16 +37,7 @@ import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.lucene90.Lucene90PointsReader;
 import org.apache.lucene.codecs.lucene90.Lucene90PointsWriter;
-import org.apache.lucene.document.BinaryPoint;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -347,6 +338,33 @@ public class TestPointQueries extends LuceneTestCase {
         2, s.count(FloatPoint.newRangeQuery("point", Float.MAX_VALUE, Float.POSITIVE_INFINITY)));
     assertEquals(2, s.count(FloatPoint.newRangeQuery("point", Float.POSITIVE_INFINITY, Float.NaN)));
 
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicIntFields() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new IntField("int_field", -7, false));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntField("int_field", 0, false));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntField("int_field", 3, false));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(IntField.newRangeQuery("int_field", -8, 1)));
+    assertEquals(3, s.count(IntField.newRangeQuery("int_field", -7, 3)));
+    assertEquals(1, s.count(IntField.newExactQuery("int_field", -7)));
+    assertEquals(0, s.count(IntField.newExactQuery("int_field", -6)));
     w.close();
     r.close();
     dir.close();
@@ -1278,6 +1296,11 @@ public class TestPointQueries extends LuceneTestCase {
     doc.add(new DoublePoint("double", 1.0));
     w.addDocument(doc);
 
+    doc = new Document();
+    doc.add(new IntField("int_field", 1, false));
+    w.addDocument(doc);
+
+
     IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r, false);
     assertEquals(1, s.count(IntPoint.newExactQuery("int", 42)));
@@ -1291,6 +1314,9 @@ public class TestPointQueries extends LuceneTestCase {
 
     assertEquals(1, s.count(DoublePoint.newExactQuery("double", 1.0)));
     assertEquals(0, s.count(DoublePoint.newExactQuery("double", 2.0)));
+
+    assertEquals(1, s.count(IntField.newExactQuery("int_field", 1)));
+    assertEquals(0, s.count(IntField.newExactQuery("int_field", 2)));
     w.close();
     r.close();
     dir.close();
@@ -1321,6 +1347,10 @@ public class TestPointQueries extends LuceneTestCase {
         "field:[1.3 TO 2.5],[-2.9 TO 1.0]",
         DoublePoint.newRangeQuery("field", new double[] {1.3, -2.9}, new double[] {2.5, 1.0})
             .toString());
+
+    // int fields
+    assertEquals("field:[1 TO 2]", IntField.newRangeQuery("field", 1, 2).toString());
+    assertEquals("field:[-2 TO 1]", IntField.newRangeQuery("field", -2, 1).toString());
   }
 
   private int[] toArray(Set<Integer> valuesSet) {

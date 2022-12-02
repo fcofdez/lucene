@@ -36,6 +36,7 @@ import org.apache.lucene.tests.analysis.Token;
 import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 
 // sanity check some basics of fields
 public class TestField extends LuceneTestCase {
@@ -209,6 +210,27 @@ public class TestField extends LuceneTestCase {
             });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
     assertEquals("IntPoint <foo:6,7>", field.toString());
+  }
+
+  public void testIntField() throws Exception {
+    IntField field = new IntField("foo", 12, false);
+
+    trySetByteValue(field);
+    trySetBytesValue(field);
+    trySetBytesRefValue(field);
+    trySetDoubleValue(field);
+    field.setIntValue(6);
+    trySetLongValue(field);
+    trySetFloatValue(field);
+    trySetLongValue(field);
+    trySetReaderValue(field);
+    trySetShortValue(field);
+    trySetStringValue(field);
+    trySetTokenStreamValue(field);
+
+    assertEquals(6, field.numericValue().intValue());
+    assertEquals(6, NumericUtils.sortableBytesToInt(field.binaryValue().bytes, 0));
+    assertEquals("IntField <foo:6>", field.toString());
   }
 
   public void testNumericDocValuesField() throws Exception {

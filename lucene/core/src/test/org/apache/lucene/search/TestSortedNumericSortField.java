@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
@@ -284,4 +285,32 @@ public class TestSortedNumericSortField extends LuceneTestCase {
     ir.close();
     dir.close();
   }
+
+  public void testIntField() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new IntField("value", -3, true));
+    doc.add(newStringField("id", "2", Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntField("value", -5, true));
+    doc.add(newStringField("id", "1", Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortedNumericSortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits.value);
+    // -5 comes before -3
+    assertEquals("1", searcher.doc(td.scoreDocs[0].doc).get("id"));
+    assertEquals("2", searcher.doc(td.scoreDocs[1].doc).get("id"));
+
+    ir.close();
+    dir.close();
+  }
+
 }

@@ -421,6 +421,10 @@ public class TestMultiDocValues extends LuceneTestCase {
     dir.close();
   }
 
+  public void testIntField() {
+    fail();
+  }
+
   private void testRandomAdvance(DocIdSetIterator iter1, DocIdSetIterator iter2)
       throws IOException {
     assertEquals(-1, iter1.docID());

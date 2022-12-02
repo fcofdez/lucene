@@ -17,14 +17,8 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.document.StringField;
+
+import org.apache.lucene.document.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
@@ -304,4 +298,45 @@ public class TestDocValues extends LuceneTestCase {
     assertEquals("field=\"foo\": null value not allowed", iae.getMessage());
     IOUtils.close(iw, dir);
   }
+
+    public void testIntField() throws IOException {
+        Directory dir = newDirectory();
+        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+        Document doc = new Document();
+        doc.add(new IntField("foo", 10, false));
+        iw.addDocument(doc);
+
+        DirectoryReader dr = DirectoryReader.open(iw);
+        LeafReader r = getOnlyLeafReader(dr);
+
+        assertNotNull(DocValues.getNumeric(r, "foo"));
+        assertNotNull(DocValues.getSortedNumeric(r, "foo"));
+
+        expectThrows(IllegalStateException.class, () -> DocValues.getBinary(r, "foo"));
+        expectThrows(IllegalStateException.class, () -> DocValues.getSorted(r, "foo"));
+        expectThrows(IllegalStateException.class, () -> DocValues.getSortedSet(r, "foo"));
+
+        IOUtils.close(dr, iw, dir);
+    }
+
+    public void testSortedIntField() throws IOException {
+        Directory dir = newDirectory();
+        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+        Document doc = new Document();
+        doc.add(new IntField("foo", 10, true));
+        doc.add(new IntField("foo", 128, true));
+        iw.addDocument(doc);
+
+        DirectoryReader dr = DirectoryReader.open(iw);
+        LeafReader r = getOnlyLeafReader(dr);
+
+        assertNotNull(DocValues.getSortedNumeric(r, "foo"));
+
+        expectThrows(IllegalStateException.class, () -> DocValues.getNumeric(r, "foo"));
+        expectThrows(IllegalStateException.class, () -> DocValues.getBinary(r, "foo"));
+        expectThrows(IllegalStateException.class, () -> DocValues.getSorted(r, "foo"));
+        expectThrows(IllegalStateException.class, () -> DocValues.getSortedSet(r, "foo"));
+
+        IOUtils.close(dr, iw, dir);
+    }
 }

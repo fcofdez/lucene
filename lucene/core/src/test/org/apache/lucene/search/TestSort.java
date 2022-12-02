@@ -780,6 +780,10 @@ public class TestSort extends LuceneTestCase {
     dir.close();
   }
 
+  public void testIntFieldSort() {
+    fail();
+  }
+
   /** Tests sorting on multiple sort fields */
   public void testMultiSort() throws IOException {
     Directory dir = newDirectory();
